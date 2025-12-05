@@ -143,6 +143,63 @@ class Prop<T> extends PropBase<T> {
     }
   }
 
+  /// Executes an asynchronous [operation] using the prop's current value as input.
+  ///
+  /// If the prop is not [valid], this method does nothing.
+  /// Otherwise, it passes the current value to the [operation] and updates the
+  /// prop with the result, putting it in a loading state while the operation runs.
+  Future<void> transform(
+    Future<T> Function(T currentValue) operation, {
+    void Function(T value)? onSucces,
+    void Function(Object error, StackTrace st)? onFailure,
+  }) async {
+    if (!valid) return;
+    final currentValue = _value as T;
+
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final value = await operation(currentValue);
+      onSucces?.call(value);
+      set(value);
+    } catch (e, s) {
+      _error = e;
+      _stackTrace = s;
+      _isValid = false;
+      onFailure?.call(e, s);
+    } finally {
+      _isLoading = false;
+      // Also notify here to signal that loading is finished.
+      notifyListeners();
+    }
+  }
+
+  /// Executes a synchronous [operation] using the prop's current value as input.
+  ///
+  /// If the prop is not [valid], this method does nothing.
+  /// Otherwise, it passes the current value to the [operation] and updates the
+  /// prop with the result.
+  void transformSync(
+    T Function(T currentValue) operation, {
+    void Function(T value)? onSucces,
+    void Function(Object error, StackTrace st)? onFailure,
+  }) {
+    if (!valid) return;
+    final currentValue = _value as T;
+
+    try {
+      final value = operation(currentValue);
+      onSucces?.call(value);
+      set(value);
+    } catch (e, s) {
+      _error = e;
+      _stackTrace = s;
+      _isValid = false;
+      onFailure?.call(e, s);
+      notifyListeners();
+    }
+  }
+
   /// Resets the prop to its initial empty state, clearing any value or error.
   void reset() {
     _value = null;
@@ -211,6 +268,21 @@ class SyncProp<T> extends PropBase<T> {
     _value = newValue;
     _isValid = true;
     notifyListeners();
+  }
+
+  /// Executes a synchronous [operation] using the prop's current value as input.
+  ///
+  /// If the prop is not [valid], this method does nothing.
+  /// Otherwise, it passes the current value to the [operation] and updates the
+  /// prop with the result.
+  void transform(
+    T Function(T currentValue) operation,
+  ) {
+    if (!valid) return;
+    final currentValue = _value;
+
+    final newValue = operation(currentValue);
+    set(newValue);
   }
 
   @override

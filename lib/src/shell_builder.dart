@@ -8,7 +8,10 @@ typedef ValidViewBuilder<T extends ViewShellControl> = Widget Function();
 /// based on the current [ViewShellState].
 abstract class ShellBuilder {
   /// Base constructor for a [ShellBuilder].
-  const ShellBuilder();
+  ShellBuilder({this.key});
+
+  ///The key used to persist widgets across rebuilds
+  Key? key;
 
   /// Builds the widget tree for the current state.
   ///
@@ -29,7 +32,7 @@ abstract class ShellBuilder {
 /// and the [child] for the valid state.
 class DefaultShellBuilder extends ShellBuilder {
   /// Creates a [DefaultShellBuilder].
-  const DefaultShellBuilder();
+  DefaultShellBuilder({super.key});
 
   @override
   Widget build(
@@ -37,16 +40,22 @@ class DefaultShellBuilder extends ShellBuilder {
     ViewShellState state,
     ValidViewBuilder builder,
   ) {
-    return switch (state) {
-      ValidView _ => builder(),
-      ErrorView _ => const Center(child: Text('An unexpected error occurred')),
-      _ => const Center(
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator.adaptive(),
+    return AnimatedSwitcher(
+      key: key,
+      duration: Duration(milliseconds: 200),
+      child: switch (state) {
+        ValidView _ => builder(),
+        ErrorView _ => const Center(
+          child: Text('An unexpected error occurred'),
         ),
-      ),
-    };
+        _ => const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator.adaptive(),
+          ),
+        ),
+      },
+    );
   }
 }

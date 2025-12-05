@@ -5,7 +5,7 @@ import 'package:view_shell/src/shell_config.dart';
 import 'package:view_shell/src/shell_control.dart';
 
 /// A widget that builds a different UI based on the status of a [ViewShellControl].
-class ViewShell extends StatefulWidget {
+class ViewShell<T extends ViewShellControl> extends StatefulWidget {
   const ViewShell({
     super.key,
     required this.create,
@@ -14,7 +14,7 @@ class ViewShell extends StatefulWidget {
   });
 
   /// A function that creates the [ViewShellControl].
-  final ViewShellControl Function(BuildContext context) create;
+  final T Function(BuildContext context) create;
 
   /// The builder responsible for constructing the UI based on the shell's current state.
   ///
@@ -23,14 +23,16 @@ class ViewShell extends StatefulWidget {
   final ShellBuilder? shellBuilder;
 
   /// The builder for the valid state, which is passed as the `child` to the [shellBuilder].
-  final Widget Function(BuildContext context, ViewShellControl state) builder;
+  final Widget Function(BuildContext context, T control) builder;
 
   @override
-  State<ViewShell> createState() => _ViewShellState();
+  State<ViewShell<T>> createState() => _ViewShellState<T>();
 }
 
-class _ViewShellState extends State<ViewShell> {
-  late final ViewShellControl control;
+class _ViewShellState<T extends ViewShellControl> extends State<ViewShell<T>> {
+  late final T control;
+
+  final builderKey = UniqueKey();
 
   void _stateListener() {
     // Rebuild whenever the controller notifies. The controller is responsible
@@ -63,7 +65,9 @@ class _ViewShellState extends State<ViewShell> {
     final shellBuilder =
         widget.shellBuilder ??
         ViewShellConfig.of(context)?.shellBuilder ??
-        const DefaultShellBuilder();
+        DefaultShellBuilder();
+
+    shellBuilder.key = builderKey;
 
     return ChangeNotifierProvider.value(
       value: control,

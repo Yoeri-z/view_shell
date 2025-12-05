@@ -16,15 +16,17 @@ class PropValueBuilder<TControl extends ViewShellControl, TValue>
   });
 
   /// Selects the [PropBase] from the [TControl].
-  final PropBase<TValue> Function(TControl) selector;
+  final PropBase<TValue> Function(TControl control) selector;
 
   /// The builder to use when the prop is in a valid state.
   final Widget Function(BuildContext context, TValue value) builder;
   @override
   Widget build(BuildContext context) {
-    final control = context.watch<TControl>();
-    final prop = selector(control);
+    final prop = selector(context.read<TControl>());
 
-    return builder(context, prop.require);
+    return ListenableBuilder(
+      listenable: prop,
+      builder: (context, _) => builder(context, prop.require),
+    );
   }
 }

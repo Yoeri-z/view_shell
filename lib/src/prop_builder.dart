@@ -19,9 +19,11 @@ class PropBuilder<TControl extends ViewShellControl, TProp extends PropBase>
 
   @override
   Widget build(BuildContext context) {
-    final control = context.watch<TControl>();
-    final prop = selector(control);
+    final prop = selector(context.read<TControl>());
 
-    return builder(context, prop);
+    return ListenableBuilder(
+      listenable: prop,
+      builder: (context, _) => builder(context, prop),
+    );
   }
 }

@@ -1,6 +1,7 @@
 name: view_shell
 description: "A minimalistic state management solution"
 version: 0.0.1
+repository: https://github.com/Yoeri-z/view_shell
 
 environment:
   sdk: ^3.9.2
