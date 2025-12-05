@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:view_shell/src/prop.dart';
 import 'package:view_shell/src/shell_state.dart';
 
+typedef StatusResolver = ViewShellState Function(List<PropBase> props);
+
 /// A controller that manages the state and properties for a `ViewShell`.
 abstract class ViewShellControl with ChangeNotifier {
   /// Creates an instance of `ViewShellControl`.
@@ -19,10 +21,14 @@ abstract class ViewShellControl with ChangeNotifier {
   }
 
   /// The list of props that determine the control's overall status.
+  ///
+  /// Props in this list will get automatically disposed if the [ViewShell] is removed.
+  ///
+  /// If you have props that are not in this list, they need to be manually disposed of.
   List<PropBase> get viewProps;
 
   /// An optional custom resolver to determine the `ViewStatus` from `viewProps`.
-  ViewShellState Function(List<PropBase> props)? statusResolver;
+  StatusResolver? statusResolver;
 
   late ViewShellState _status;
 

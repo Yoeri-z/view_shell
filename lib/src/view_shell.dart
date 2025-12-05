@@ -20,6 +20,9 @@ class ViewShell<T extends ViewShellControl> extends StatefulWidget {
   ///
   /// If not provided, it will fall back to the `shellBuilder` from the nearest
   /// [ViewShellConfig] ancestor, or finally to [DefaultShellBuilder].
+  ///
+  /// Premade builders are [DefaultShellBuilder], [NoAnimationShellBuilder].
+  /// Making your own builder can be done by extending [SimpleShellBuilder] or [ShellBuilder].
   final ShellBuilder? shellBuilder;
 
   /// The builder for the valid state, which is passed as the `child` to the [shellBuilder].
@@ -32,11 +35,8 @@ class ViewShell<T extends ViewShellControl> extends StatefulWidget {
 class _ViewShellState<T extends ViewShellControl> extends State<ViewShell<T>> {
   late final T control;
 
-  final builderKey = UniqueKey();
-
   void _stateListener() {
-    // Rebuild whenever the controller notifies. The controller is responsible
-    // for deciding when a status change is significant enough to warrant a rebuild.
+    //the control already checks if the status change warrants a rebuild or not.
     if (mounted) {
       setState(() {});
     }
@@ -58,28 +58,20 @@ class _ViewShellState<T extends ViewShellControl> extends State<ViewShell<T>> {
 
   @override
   Widget build(BuildContext context) {
-    // The effective ShellBuilder is chosen with a clear priority:
-    // 1. Direct widget parameter
-    // 2. Value from ViewShellConfig ancestor
-    // 3. Static default
     final shellBuilder =
         widget.shellBuilder ??
         ViewShellConfig.of(context)?.shellBuilder ??
         DefaultShellBuilder();
 
-    shellBuilder.key = builderKey;
-
     return ChangeNotifierProvider.value(
       value: control,
-      child: Builder(
-        builder: (context) {
-          return shellBuilder.build(
-            context,
-            control.state,
-            () => widget.builder(context, control),
-          );
-        },
-      ),
+      builder: (context, _) {
+        return shellBuilder.build(
+          context,
+          control.state,
+          () => widget.builder(context, control),
+        );
+      },
     );
   }
 }

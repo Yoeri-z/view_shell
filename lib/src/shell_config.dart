@@ -8,11 +8,17 @@ import 'package:view_shell/src/shell_builder.dart';
 /// a consistent look and feel for loading/error states across the app.
 class ViewShellConfig extends InheritedWidget {
   /// The default [ShellBuilder] to be used by descendant `ViewShell` widgets.
+  ///
+  /// Premade builders are [DefaultShellBuilder], [NoAnimationShellBuilder].
+  /// Making your own builder can be done by extending [SimpleShellBuilder] or [ShellBuilder].
   final ShellBuilder shellBuilder;
 
   /// Creates a [ViewShellConfig] widget.
   ///
   /// Wrap a part of your widget tree with this to provide a default [shellBuilder].
+  ///
+  /// Premade builders are [DefaultShellBuilder], [NoAnimationShellBuilder].
+  /// Making your own builder can be done by extending [SimpleShellBuilder] or [ShellBuilder].
   const ViewShellConfig({
     super.key,
     required this.shellBuilder,
