@@ -46,12 +46,12 @@ class _ViewShellState<T extends ViewShellControl> extends State<ViewShell<T>> {
   void initState() {
     super.initState();
     control = widget.create(context);
+    control.registerContext(context);
     control.addListener(_stateListener);
   }
 
   @override
   void dispose() {
-    control.removeListener(_stateListener);
     control.dispose();
     super.dispose();
   }
