@@ -2,8 +2,26 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+/// The current state of a [Prop].
+enum PropState {
+  /// The prop has not been initialized or has been reset.
+  initial,
+
+  /// The prop is currently executing an asynchronous operation.
+  loading,
+
+  /// The prop has a valid value.
+  success,
+
+  /// The prop has an error.
+  error,
+}
+
 ///The base class for any prop, extend this to make your own custom prop.
 abstract class PropBase<T> extends ChangeNotifier {
+  /// The current state of the prop.
+  PropState get state;
+
   /// Whether the prop's value is currently valid and ready to be used.
   bool get valid;
 
@@ -21,27 +39,6 @@ abstract class PropBase<T> extends ChangeNotifier {
 
   /// Requires the value of the prop, throwing an exception if it's not valid.
   T get require;
-
-  /// Manually marks the prop as invalid.
-  void invalidate();
-
-  /// Manually marks the prop as valid, if it doesn't currently have an error.
-  void validate();
-}
-
-/// The current state of a [Prop].
-enum PropState {
-  /// The prop has not been initialized or has been reset.
-  initial,
-
-  /// The prop is currently executing an asynchronous operation.
-  loading,
-
-  /// The prop has a valid value.
-  success,
-
-  /// The prop has an error.
-  error,
 }
 
 /// A [Prop] is a property that can hold a value, an error, or be in a loading state.
@@ -55,12 +52,13 @@ class Prop<T> extends PropBase<T> {
   PropState _state;
 
   /// Creates a [Prop] with an initial value, marked as valid.
-  Prop.withValue(T value)
-      : _value = value,
-        _state = PropState.success;
+  Prop.withValue(T value) : _value = value, _state = PropState.success;
 
   /// Creates an empty [Prop], marked as invalid.
   Prop.empty() : _state = PropState.initial;
+
+  @override
+  PropState get state => _state;
 
   /// The current value of the prop.
   /// This can be accessed even when the prop is not [valid], for example to show a stale value.
@@ -85,18 +83,18 @@ class Prop<T> extends PropBase<T> {
   bool get hasError => _state == PropState.error;
 
   @override
-  T get require {
-    switch (_state) {
-      case PropState.success:
-        return _value as T;
-      case PropState.loading:
-        throw StateError('Cannot require value: Prop is loading.');
-      case PropState.error:
-        throw StateError('Cannot require value: Prop has an error: $_error');
-      case PropState.initial:
-        throw StateError('Cannot require value: Prop is invalid.');
-    }
-  }
+  T get require => switch (_state) {
+    PropState.success => _value as T,
+    PropState.loading => throw StateError(
+      'Cannot require value: Prop is loading.',
+    ),
+    PropState.error => throw StateError(
+      'Cannot require value: Prop has an error: $_error',
+    ),
+    PropState.initial => throw StateError(
+      'Cannot require value: Prop is invalid.',
+    ),
+  };
 
   /// Sets a new [value] for the prop and marks it as valid.
   /// This will clear any existing error.
@@ -187,8 +185,11 @@ class Prop<T> extends PropBase<T> {
   }) async {
     if (_state != PropState.success) return;
     final currentValue = _value as T;
-    await _runAsync(() => operation(currentValue),
-        onSucces: onSucces, onFailure: onFailure);
+    await _runAsync(
+      () => operation(currentValue),
+      onSucces: onSucces,
+      onFailure: onFailure,
+    );
   }
 
   /// Executes a synchronous [operation] using the prop's current value as input.
@@ -221,20 +222,6 @@ class Prop<T> extends PropBase<T> {
     _state = PropState.initial;
     notifyListeners();
   }
-
-  @override
-  void invalidate() {
-    _state = PropState.initial;
-    notifyListeners();
-  }
-
-  @override
-  void validate() {
-    if (_state != PropState.error) {
-      _state = PropState.success;
-      notifyListeners();
-    }
-  }
 }
 
 /// A [SyncProp] is a simplified synchronous property wrapper.
@@ -243,18 +230,19 @@ class Prop<T> extends PropBase<T> {
 /// An initial value is required upon creation.
 class SyncProp<T> extends PropBase<T> {
   T _value;
-  bool _isValid;
+  PropState _state;
 
   /// Creates a [SyncProp] with an initial value.
   ///
   /// The [initialValue] is required (unless [T] is nullable) and the prop
   /// starts as valid.
-  SyncProp(T initialValue)
-      : _value = initialValue,
-        _isValid = true;
+  SyncProp(T initialValue) : _value = initialValue, _state = PropState.success;
 
   @override
-  bool get valid => _isValid;
+  PropState get state => _state;
+
+  @override
+  bool get valid => _state == PropState.success;
 
   @override
   bool get hasError => false;
@@ -280,7 +268,7 @@ class SyncProp<T> extends PropBase<T> {
   /// Sets a new [newValue] for the prop and marks it as valid.
   void set(T newValue) {
     _value = newValue;
-    _isValid = true;
+    _state = PropState.success;
     notifyListeners();
   }
 
@@ -289,28 +277,12 @@ class SyncProp<T> extends PropBase<T> {
   /// If the prop is not [valid], this method does nothing.
   /// Otherwise, it passes the current value to the [operation] and updates the
   /// prop with the result.
-  void transform(
-    T Function(T currentValue) operation,
-  ) {
+  void transform(T Function(T currentValue) operation) {
     if (!valid) return;
     final currentValue = _value;
 
     final newValue = operation(currentValue);
     set(newValue);
-  }
-
-  @override
-  void invalidate() {
-    _isValid = false;
-    notifyListeners();
-  }
-
-  @override
-  void validate() {
-    if (!hasError) {
-      _isValid = true;
-      notifyListeners();
-    }
   }
 }
 
@@ -323,7 +295,7 @@ class StreamProp<T> extends PropBase<T> {
   T? _value;
   Object? _error;
   StackTrace? _stackTrace;
-  bool _isValid = false;
+  PropState _state = PropState.initial;
   bool _isCompleted = false;
 
   /// Creates a [StreamProp], optionally hooking to an initial [stream].
@@ -332,6 +304,9 @@ class StreamProp<T> extends PropBase<T> {
       hook(stream);
     }
   }
+
+  @override
+  PropState get state => _state;
 
   /// The latest value emitted by the stream. Can be accessed even when invalid.
   @override
@@ -352,10 +327,10 @@ class StreamProp<T> extends PropBase<T> {
   bool get isHooked => _subscription != null;
 
   @override
-  bool get hasError => _error != null;
+  bool get hasError => _state == PropState.error;
 
   @override
-  bool get valid => _isValid && !hasError;
+  bool get valid => _state == PropState.success;
 
   @override
   T get require {
@@ -379,20 +354,21 @@ class StreamProp<T> extends PropBase<T> {
     _isCompleted = false;
     _error = null;
     _stackTrace = null;
+    _state = PropState.initial;
     notifyListeners(); // Notify that we are about to listen to a new stream
 
     _subscription = stream.listen(
       (data) {
         _value = data;
-        _isValid = true;
         _error = null;
         _stackTrace = null;
+        _state = PropState.success;
         notifyListeners();
       },
       onError: (error, stackTrace) {
         _error = error;
         _stackTrace = stackTrace;
-        _isValid = false;
+        _state = PropState.error;
         notifyListeners();
       },
       onDone: () {
@@ -415,20 +391,6 @@ class StreamProp<T> extends PropBase<T> {
   void dispose() {
     unhook();
     super.dispose();
-  }
-
-  @override
-  void invalidate() {
-    _isValid = false;
-    notifyListeners();
-  }
-
-  @override
-  void validate() {
-    if (!hasError) {
-      _isValid = true;
-      notifyListeners();
-    }
   }
 }
 
@@ -505,9 +467,9 @@ class PaginatedProp<T> extends Prop<List<T>> {
   /// The [fetcher] function is required to load pages.
   /// [initialPage] can be set to 1 or 0 depending on the API's pagination scheme.
   PaginatedProp(this._fetcher, {int initialPage = 1})
-      : _currentPage = initialPage,
-        _initialPage = initialPage,
-        super.empty();
+    : _currentPage = initialPage,
+      _initialPage = initialPage,
+      super.empty();
 
   /// Replaces the current fetcher function with a [newFetcher].
   void setFetcher(Future<List<T>> Function(int page) newFetcher) {

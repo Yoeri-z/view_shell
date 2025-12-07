@@ -134,10 +134,15 @@ abstract class ViewShellControl with ChangeNotifier {
 }
 
 ViewShellState _fallbackResolver(List<PropBase> props) {
+  final errors = <PropBase, PropError>{};
   for (final prop in props) {
     if (prop.hasError) {
-      return ErrorView(prop.error!, prop.stackTrace, staleData: prop.value);
+      errors[prop] = PropError(prop.error!, prop.stackTrace);
     }
+  }
+
+  if (errors.isNotEmpty) {
+    return ErrorView(errors);
   }
 
   for (final prop in props) {

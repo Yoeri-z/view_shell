@@ -1,3 +1,5 @@
+import 'package:view_shell/src/prop.dart';
+
 /// Represents the overall status of a [ViewShellControl].
 sealed class ViewShellState {
   /// Base constructor for a `ViewStatus`.
@@ -10,19 +12,25 @@ class ValidView extends ViewShellState {
   const ValidView();
 }
 
-/// Represents a state where an error has occurred.
-class ErrorView extends ViewShellState {
+/// A container for an error and its associated stack trace from a [PropBase].
+class PropError {
   /// The error object that was thrown.
   final Object error;
 
   /// The stack trace associated with the error.
   final StackTrace? stackTrace;
 
-  /// The last valid data before the error occurred, if available.
-  final Object? staleData;
+  /// Creates a [PropError] instance.
+  const PropError(this.error, this.stackTrace);
+}
+
+/// Represents a state where one or more errors have occurred in props.
+class ErrorView extends ViewShellState {
+  /// A map of all props that have an error, with details about the error.
+  final Map<PropBase, PropError> errors;
 
   /// Creates an [ErrorView] status.
-  const ErrorView(this.error, this.stackTrace, {this.staleData});
+  const ErrorView(this.errors);
 }
 
 /// Represents a pending state, e.g., while data is loading.

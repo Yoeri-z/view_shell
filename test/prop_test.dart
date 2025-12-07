@@ -60,29 +60,6 @@ void main() {
       expect(listenerCallCount, 1);
     });
 
-    test('invalidate() marks as invalid and notifies listeners', () {
-      final prop = Prop.withValue('initial');
-      var listenerCallCount = 0;
-      prop.addListener(() => listenerCallCount++);
-
-      prop.invalidate();
-
-      expect(prop.valid, isFalse);
-      expect(listenerCallCount, 1);
-    });
-
-    test('validate() marks as valid and notifies listeners if no error', () {
-      final prop = Prop<String>.empty();
-      prop.invalidate(); // Start as invalid
-      var listenerCallCount = 0;
-      prop.addListener(() => listenerCallCount++);
-
-      prop.validate();
-
-      expect(prop.valid, isTrue);
-      expect(listenerCallCount, 1);
-    });
-
     test('reset() clears all state and notifies listeners', () {
       final prop = Prop.withValue('initial');
       var listenerCallCount = 0;
@@ -187,9 +164,6 @@ void main() {
     test('require throws StateError when not valid', () {
       final prop = Prop<String>.empty();
       expect(() => prop.require, throwsStateError);
-      prop.set('val');
-      prop.invalidate();
-      expect(() => prop.require, throwsStateError);
     });
   });
 
@@ -211,16 +185,6 @@ void main() {
       expect(prop.value, 'new');
       expect(prop.valid, isTrue);
       expect(listenerCallCount, 1);
-    });
-
-    test('invalidate() marks as invalid and notifies', () {
-      final prop = SyncProp('initial');
-      var listenerCallCount = 0;
-      prop.addListener(() => listenerCallCount++);
-      prop.invalidate();
-      expect(prop.valid, isFalse);
-      expect(listenerCallCount, 1);
-      expect(() => prop.require, throwsStateError);
     });
   });
 

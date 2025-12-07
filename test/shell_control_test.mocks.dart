@@ -3,9 +3,10 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:ui' as _i3;
+import 'dart:ui' as _i4;
 
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:view_shell/view_shell.dart' as _i3;
 
 import 'shell_control_test.dart' as _i2;
 
@@ -33,6 +34,14 @@ class MockTestProp extends _i1.Mock implements _i2.TestProp {
   }
 
   @override
+  _i3.PropState get state =>
+      (super.noSuchMethod(
+            Invocation.getter(#state),
+            returnValue: _i3.PropState.initial,
+          )
+          as _i3.PropState);
+
+  @override
   bool get valid =>
       (super.noSuchMethod(Invocation.getter(#valid), returnValue: false)
           as bool);
@@ -48,25 +57,13 @@ class MockTestProp extends _i1.Mock implements _i2.TestProp {
           as bool);
 
   @override
-  void invalidate() => super.noSuchMethod(
-    Invocation.method(#invalidate, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void validate() => super.noSuchMethod(
-    Invocation.method(#validate, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void addListener(_i3.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i4.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
   );
 
   @override
-  void removeListener(_i3.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i4.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#removeListener, [listener]),
     returnValueForMissingStub: null,
   );
