@@ -31,7 +31,8 @@ abstract class ViewShellControl with ChangeNotifier {
 
   final _active = <ShellAction, Completer>{};
 
-  BuildContext? _shellContext;
+  // Changed: Store a function that provides the context, not the context itself
+  BuildContext? Function()? _contextProvider;
 
   /// Creates an instance of `ViewShellControl`.
   ViewShellControl({ViewShellState? initialStatus, this.statusResolver}) {
@@ -84,16 +85,16 @@ abstract class ViewShellControl with ChangeNotifier {
     return _active.containsKey(action);
   }
 
-  ///Registers a new context that this [ViewShellControl] will treat as the [ViewShell].
+  /// Registers a new context provider function that this [ViewShellControl] will use.
   ///
-  ///This method is used internally by [ViewShell] and should generally be avoided.
-  void registerContext(BuildContext context) {
-    _shellContext = context;
+  /// This method is used internally by [ViewShell] and should generally be avoided.
+  void registerContextProvider(BuildContext? Function() provider) {
+    _contextProvider = provider;
   }
 
-  ///Deregisters the current shell context.
-  void deregisterContext() {
-    _shellContext = null;
+  /// Deregisters the current context provider.
+  void deregisterContextProvider() {
+    _contextProvider = null;
   }
 
   /// Run a [ShellAction] in the context that this [ViewShellControl] was created in.
@@ -105,9 +106,11 @@ abstract class ViewShellControl with ChangeNotifier {
       return completer.future;
     }
 
-    if (_shellContext == null || !_shellContext!.mounted) return null;
+    // Changed: Get the current context from the provider function
+    final context = _contextProvider?.call();
+    if (context == null || !context.mounted) return null;
 
-    return action(_shellContext!);
+    return action(context);
   }
 
   void _propListener() {
@@ -125,7 +128,7 @@ abstract class ViewShellControl with ChangeNotifier {
     for (final prop in viewProps) {
       prop.dispose();
     }
-    deregisterContext();
+    deregisterContextProvider(); // Changed: Call deregisterContextProvider
     super.dispose();
   }
 }

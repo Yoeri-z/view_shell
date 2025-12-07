@@ -46,7 +46,7 @@ class _ViewShellState<T extends ViewShellControl> extends State<ViewShell<T>> {
   void initState() {
     super.initState();
     control = widget.create(context);
-    control.registerContext(context);
+    control.registerContextProvider(() => context);
     control.addListener(_stateListener);
   }
 
@@ -61,7 +61,7 @@ class _ViewShellState<T extends ViewShellControl> extends State<ViewShell<T>> {
     final shellBuilder =
         widget.shellBuilder ??
         ViewShellConfig.of(context)?.shellBuilder ??
-        DefaultShellBuilder();
+        const DefaultShellBuilder();
 
     return ChangeNotifierProvider.value(
       value: control,

@@ -29,6 +29,21 @@ abstract class PropBase<T> extends ChangeNotifier {
   void validate();
 }
 
+/// The current state of a [Prop].
+enum PropState {
+  /// The prop has not been initialized or has been reset.
+  initial,
+
+  /// The prop is currently executing an asynchronous operation.
+  loading,
+
+  /// The prop has a valid value.
+  success,
+
+  /// The prop has an error.
+  error,
+}
+
 /// A [Prop] is a property that can hold a value, an error, or be in a loading state.
 ///
 /// It is designed to facilitate safe handling of values that are fetched asynchronously
@@ -37,15 +52,15 @@ class Prop<T> extends PropBase<T> {
   T? _value;
   Object? _error;
   StackTrace? _stackTrace;
-
-  bool _isLoading = false;
-  bool _isValid;
+  PropState _state;
 
   /// Creates a [Prop] with an initial value, marked as valid.
-  Prop.withValue(T value) : _value = value, _isValid = true;
+  Prop.withValue(T value)
+      : _value = value,
+        _state = PropState.success;
 
   /// Creates an empty [Prop], marked as invalid.
-  Prop.empty() : _isValid = false;
+  Prop.empty() : _state = PropState.initial;
 
   /// The current value of the prop.
   /// This can be accessed even when the prop is not [valid], for example to show a stale value.
@@ -61,36 +76,72 @@ class Prop<T> extends PropBase<T> {
   StackTrace? get stackTrace => _stackTrace;
 
   /// Whether the prop is currently executing an asynchronous operation.
-  bool get isLoading => _isLoading;
+  bool get isLoading => _state == PropState.loading;
 
   @override
-  bool get valid => _isValid && !hasError && !_isLoading;
+  bool get valid => _state == PropState.success;
 
   @override
-  bool get hasError => _error != null;
+  bool get hasError => _state == PropState.error;
 
   @override
   T get require {
-    if (valid) {
-      return _value as T;
+    switch (_state) {
+      case PropState.success:
+        return _value as T;
+      case PropState.loading:
+        throw StateError('Cannot require value: Prop is loading.');
+      case PropState.error:
+        throw StateError('Cannot require value: Prop has an error: $_error');
+      case PropState.initial:
+        throw StateError('Cannot require value: Prop is invalid.');
     }
-    if (_isLoading) {
-      throw StateError('Cannot require value: Prop is loading.');
-    }
-    if (hasError) {
-      throw StateError('Cannot require value: Prop has an error: $_error');
-    }
-    throw StateError('Cannot require value: Prop is invalid.');
   }
 
   /// Sets a new [value] for the prop and marks it as valid.
   /// This will clear any existing error.
   void set(T value) {
     _value = value;
-    _isValid = true;
     _error = null;
     _stackTrace = null;
+    _state = PropState.success;
     notifyListeners();
+  }
+
+  void _setError(
+    Object e,
+    StackTrace s, {
+    void Function(Object error, StackTrace st)? onFailure,
+  }) {
+    _error = e;
+    _stackTrace = s;
+    _state = PropState.error;
+    onFailure?.call(e, s);
+    notifyListeners();
+  }
+
+  Future<void> _runAsync(
+    Future<T> Function() operation, {
+    void Function(T value)? onSucces,
+    void Function(Object error, StackTrace st)? onFailure,
+  }) async {
+    _state = PropState.loading;
+    notifyListeners();
+    try {
+      final value = await operation();
+      onSucces?.call(value);
+      _value = value;
+      _error = null;
+      _stackTrace = null;
+      _state = PropState.success;
+    } catch (e, s) {
+      _error = e;
+      _stackTrace = s;
+      _state = PropState.error;
+      onFailure?.call(e, s);
+    } finally {
+      notifyListeners();
+    }
   }
 
   /// Executes an asynchronous [operation] and updates the prop with its outcome.
@@ -103,22 +154,7 @@ class Prop<T> extends PropBase<T> {
     void Function(T value)? onSucces,
     void Function(Object error, StackTrace st)? onFailure,
   }) async {
-    _isLoading = true;
-    notifyListeners();
-    try {
-      final value = await operation();
-      onSucces?.call(value);
-      set(value);
-    } catch (e, s) {
-      _error = e;
-      _stackTrace = s;
-      _isValid = false;
-      onFailure?.call(e, s);
-    } finally {
-      _isLoading = false;
-      // Also notify here to signal that loading is finished.
-      notifyListeners();
-    }
+    await _runAsync(operation, onSucces: onSucces, onFailure: onFailure);
   }
 
   /// Executes a synchronous [operation] and updates the prop with its outcome.
@@ -135,11 +171,7 @@ class Prop<T> extends PropBase<T> {
       onSucces?.call(value);
       set(value);
     } catch (e, s) {
-      _error = e;
-      _stackTrace = s;
-      _isValid = false;
-      onFailure?.call(e, s);
-      notifyListeners();
+      _setError(e, s, onFailure: onFailure);
     }
   }
 
@@ -153,25 +185,10 @@ class Prop<T> extends PropBase<T> {
     void Function(T value)? onSucces,
     void Function(Object error, StackTrace st)? onFailure,
   }) async {
-    if (!valid) return;
+    if (_state != PropState.success) return;
     final currentValue = _value as T;
-
-    _isLoading = true;
-    notifyListeners();
-    try {
-      final value = await operation(currentValue);
-      onSucces?.call(value);
-      set(value);
-    } catch (e, s) {
-      _error = e;
-      _stackTrace = s;
-      _isValid = false;
-      onFailure?.call(e, s);
-    } finally {
-      _isLoading = false;
-      // Also notify here to signal that loading is finished.
-      notifyListeners();
-    }
+    await _runAsync(() => operation(currentValue),
+        onSucces: onSucces, onFailure: onFailure);
   }
 
   /// Executes a synchronous [operation] using the prop's current value as input.
@@ -184,7 +201,7 @@ class Prop<T> extends PropBase<T> {
     void Function(T value)? onSucces,
     void Function(Object error, StackTrace st)? onFailure,
   }) {
-    if (!valid) return;
+    if (_state != PropState.success) return;
     final currentValue = _value as T;
 
     try {
@@ -192,11 +209,7 @@ class Prop<T> extends PropBase<T> {
       onSucces?.call(value);
       set(value);
     } catch (e, s) {
-      _error = e;
-      _stackTrace = s;
-      _isValid = false;
-      onFailure?.call(e, s);
-      notifyListeners();
+      _setError(e, s, onFailure: onFailure);
     }
   }
 
@@ -205,21 +218,20 @@ class Prop<T> extends PropBase<T> {
     _value = null;
     _error = null;
     _stackTrace = null;
-    _isLoading = false;
-    _isValid = false;
+    _state = PropState.initial;
     notifyListeners();
   }
 
   @override
   void invalidate() {
-    _isValid = false;
+    _state = PropState.initial;
     notifyListeners();
   }
 
   @override
   void validate() {
-    if (!hasError) {
-      _isValid = true;
+    if (_state != PropState.error) {
+      _state = PropState.success;
       notifyListeners();
     }
   }
@@ -237,7 +249,9 @@ class SyncProp<T> extends PropBase<T> {
   ///
   /// The [initialValue] is required (unless [T] is nullable) and the prop
   /// starts as valid.
-  SyncProp(T initialValue) : _value = initialValue, _isValid = true;
+  SyncProp(T initialValue)
+      : _value = initialValue,
+        _isValid = true;
 
   @override
   bool get valid => _isValid;
@@ -491,9 +505,9 @@ class PaginatedProp<T> extends Prop<List<T>> {
   /// The [fetcher] function is required to load pages.
   /// [initialPage] can be set to 1 or 0 depending on the API's pagination scheme.
   PaginatedProp(this._fetcher, {int initialPage = 1})
-    : _currentPage = initialPage,
-      _initialPage = initialPage,
-      super.empty();
+      : _currentPage = initialPage,
+        _initialPage = initialPage,
+        super.empty();
 
   /// Replaces the current fetcher function with a [newFetcher].
   void setFetcher(Future<List<T>> Function(int page) newFetcher) {

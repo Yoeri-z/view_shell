@@ -120,7 +120,7 @@ void main() {
         expect(prop.valid, isTrue);
         expect(prop.value, 'Success');
         expect(prop.hasError, isFalse);
-        expect(listenerCallCount, 3); // isLoading=true, set, isLoading=false
+        expect(listenerCallCount, 2); // isLoading=true, final state (success)
         verify(mockCallbacks.onSucces('Success')).called(1);
       });
 

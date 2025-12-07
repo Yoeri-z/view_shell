@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -174,6 +175,8 @@ void main() {
     testWidgets('PropBuilder builds with the Prop object itself', (
       tester,
     ) async {
+      final completer = Completer<String>();
+
       await tester.pumpWidget(
         buildTestApp(
           PropBuilder<WidgetTestControl, Prop<String>>(
@@ -192,14 +195,13 @@ void main() {
       expect(find.text('Initial'), findsOneWidget);
 
       // 2. Loading state
-      final future = control.textProp.run(() async => 'Loaded');
-      await tester.pump();
+      control.textProp.run(() => completer.future); // Start the async operation
+      await tester.pump(); // Render the loading state frame
       expect(find.text('Loading...'), findsOneWidget);
 
-      await future;
-      await tester.pump();
-
       // 3. Valid state
+      completer.complete('Loaded'); // Complete the future
+      await tester.pumpAndSettle(); // Wait for all frames to settle
       expect(find.text('Value: Loaded'), findsOneWidget);
 
       // 4. Error state
