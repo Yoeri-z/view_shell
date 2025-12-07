@@ -44,15 +44,20 @@ class PropValueBuilder<TControl extends ViewShellControl, TValue>
       builder: (context, _) {
         return switch (prop.state) {
           PropState.success => builder(context, prop.require),
-          PropState.loading =>
-            loadingBuilder?.call(context) ?? const CircularProgressIndicator(),
+          PropState.loading => loadingBuilder?.call(context) ?? _invalidState(),
           PropState.error =>
             errorBuilder?.call(context, prop.error!, prop.stackTrace) ??
-                Text(prop.error.toString()),
-          PropState.initial =>
-            loadingBuilder?.call(context) ?? const CircularProgressIndicator(),
+                _invalidState(),
+          PropState.initial => loadingBuilder?.call(context) ?? _invalidState(),
         };
       },
     );
   }
+}
+
+Widget _invalidState() {
+  throw StateError(
+    '''PropValueBuilder expected the prop to have a value but instead found an invalid state. 
+    Please make sure the prop is managed by a ViewController or has custom loading and error builders defined''',
+  );
 }
