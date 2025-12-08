@@ -1,22 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:view_shell/view_shell.dart';
 
-class MyShell extends ShellWidget {
-  const MyShell({super.key, required super.child});
-
-  @override
-  ShellState<MyShell> createState() => _MyShellState();
+Future<bool?> showConfimationDialog(BuildContext context) {
+  return showDialog(
+    context: context,
+    builder: (context) {
+      return Dialog(
+        child: SizedBox(
+          width: 200,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  "Are you sure you want to reset this stream?",
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text('No'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text('Yes'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
-class _MyShellState extends ShellState<MyShell> {
+class CounterShell extends Shell {
   final counter = SyncProp(0);
 
   final asyncCounter = FutureProp(
-    Future.delayed(Duration(seconds: 1), () => 0),
+    Future.delayed(const Duration(seconds: 1), () => 0),
   );
 
   final automaticCounter = StreamProp(
-    Stream<int>.periodic(Duration(seconds: 1), (nr) => nr),
+    Stream<int>.periodic(const Duration(seconds: 1), (nr) => nr),
   );
 
   @override
@@ -29,13 +63,17 @@ class _MyShellState extends ShellState<MyShell> {
 
   void incrementAsync() {
     asyncCounter.transform(
-      (old) => Future.delayed(Duration(seconds: 1), () => old + 1),
+      (old) => Future.delayed(const Duration(seconds: 1), () => old + 1),
     );
   }
 
-  void resetCounter() {
+  void resetCounter() async {
+    final allowed = await shellRun(showConfimationDialog);
+
+    if (allowed == null || !allowed) return;
+
     automaticCounter.hook(
-      Stream<int>.periodic(Duration(seconds: 1), (nr) => nr),
+      Stream<int>.periodic(const Duration(seconds: 1), (nr) => nr),
     );
   }
 }
@@ -69,10 +107,10 @@ class MyHomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-
         title: Text(title),
       ),
-      body: MyShell(
+      body: ShellWidget<CounterShell>(
+        create: (context) => CounterShell(),
         child: Builder(
           builder: (context) {
             return Center(
@@ -80,8 +118,8 @@ class MyHomePage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   const Text('Synchronous Counter'),
-                  PropValueBuilder<MyShell, _MyShellState, int>(
-                    selector: (control) => control.counter,
+                  PropValueBuilder<CounterShell, int>(
+                    selector: (shell) => shell.counter,
                     builder: (context, value) {
                       return Text(
                         '$value',
@@ -90,15 +128,13 @@ class MyHomePage extends StatelessWidget {
                     },
                   ),
                   TextButton(
-                    onPressed: context
-                        .shell<MyShell, _MyShellState>()
-                        .incrementSync,
-                    child: Text('Increment'),
+                    onPressed: context.shell<CounterShell>().incrementSync,
+                    child: const Text('Increment'),
                   ),
-                  SizedBox(height: 50),
+                  const SizedBox(height: 50),
                   const Text('Asynchronous Counter'),
-                  PropValueBuilder<MyShell, _MyShellState, int>(
-                    selector: (control) => control.asyncCounter,
+                  PropValueBuilder<CounterShell, int>(
+                    selector: (shell) => shell.asyncCounter,
                     builder: (context, value) {
                       return Text(
                         '$value',
@@ -107,16 +143,13 @@ class MyHomePage extends StatelessWidget {
                     },
                   ),
                   TextButton(
-                    onPressed: context
-                        .shell<MyShell, _MyShellState>()
-                        .incrementAsync,
-                    child: Text('Increment'),
+                    onPressed: context.shell<CounterShell>().incrementAsync,
+                    child: const Text('Increment'),
                   ),
-
-                  SizedBox(height: 50),
+                  const SizedBox(height: 50),
                   const Text('Automatic Counter'),
-                  PropValueBuilder<MyShell, _MyShellState, int>(
-                    selector: (control) => control.automaticCounter,
+                  PropValueBuilder<CounterShell, int>(
+                    selector: (shell) => shell.automaticCounter,
                     builder: (context, value) {
                       return Text(
                         '$value',
@@ -125,10 +158,8 @@ class MyHomePage extends StatelessWidget {
                     },
                   ),
                   TextButton(
-                    onPressed: context
-                        .shell<MyShell, _MyShellState>()
-                        .resetCounter,
-                    child: Text('Reset'),
+                    onPressed: context.shell<CounterShell>().resetCounter,
+                    child: const Text('Reset'),
                   ),
                 ],
               ),

@@ -1,4 +1,4 @@
-import 'package:view_shell/src/prop.dart';
+import 'package:view_shell/view_shell.dart';
 
 /// Represents the overall status of a [ViewShellControl].
 sealed class ShellStatus {

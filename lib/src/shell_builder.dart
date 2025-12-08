@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:view_shell/src/shell_status.dart';
+import 'package:view_shell/view_shell.dart';
 
 typedef ValidViewBuilder = Widget Function();
 

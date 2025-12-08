@@ -2,13 +2,10 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:view_shell/src/prop.dart';
-import 'package:view_shell/src/shell_widget.dart';
-
-typedef ConditionCallback = bool Function<T extends ShellState>(T state);
+import 'package:view_shell/view_shell.dart';
 
 mixin ObservationHelper {
-  void initObservatory(ShellState state) {
+  void initObservatory() {
     SchedulerBinding.instance.addPostFrameCallback(
       (_) => _isFirstFrame = false,
     );

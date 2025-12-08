@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:view_shell/src/shell_builder.dart';
+import 'package:view_shell/view_shell.dart';
 
 /// An inherited widget that provides default configuration for [ViewShell] widgets.
 ///
