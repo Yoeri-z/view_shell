@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:view_shell/src/prop.dart';
-import 'package:view_shell/src/shell_state.dart';
+import 'package:view_shell/src/shell_status.dart';
 
-typedef StatusResolver = ViewShellState Function(List<PropBase> props);
+typedef StatusResolver = ShellStatus Function(List<PropBase> props);
 
 /// A ShellAction is a function that takes context and returns a value or null.
 ///
@@ -35,7 +35,7 @@ abstract class ViewShellControl with ChangeNotifier {
   BuildContext? Function()? _contextProvider;
 
   /// Creates an instance of `ViewShellControl`.
-  ViewShellControl({ViewShellState? initialStatus, this.statusResolver}) {
+  ViewShellControl({ShellStatus? initialStatus, this.statusResolver}) {
     // Initial status calculation
     _status =
         initialStatus ??
@@ -48,10 +48,10 @@ abstract class ViewShellControl with ChangeNotifier {
     }
   }
 
-  late ViewShellState _status;
+  late ShellStatus _status;
 
-  /// The current [ViewShellState] of this control.
-  ViewShellState get state => _status;
+  /// The current [ShellStatus] of this control.
+  ShellStatus get state => _status;
 
   /// Manually calls the controller to reevaluate its props.
   @visibleForTesting
@@ -133,7 +133,7 @@ abstract class ViewShellControl with ChangeNotifier {
   }
 }
 
-ViewShellState _fallbackResolver(List<PropBase> props) {
+ShellStatus _fallbackResolver(List<PropBase> props) {
   final errors = <PropBase, PropError>{};
   for (final prop in props) {
     if (prop.hasError) {
@@ -142,14 +142,14 @@ ViewShellState _fallbackResolver(List<PropBase> props) {
   }
 
   if (errors.isNotEmpty) {
-    return ErrorView(errors);
+    return ErrorShell(errors);
   }
 
   for (final prop in props) {
     if (!prop.valid) {
-      return PendingView(staleData: prop.value);
+      return PendingShell(staleData: prop.value);
     }
   }
 
-  return const ValidView();
+  return const ValidShell();
 }

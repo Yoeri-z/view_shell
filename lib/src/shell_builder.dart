@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:view_shell/src/shell_state.dart';
+import 'package:view_shell/src/shell_status.dart';
 
 typedef ValidViewBuilder = Widget Function();
 
 /// An abstract class that provides an interface to build view for a `ViewShell`
-/// based on the current [ViewShellState].
+/// based on the current [ShellStatus].
 abstract class ShellBuilder {
   /// Base constructor for a [ShellBuilder].
   const ShellBuilder();
@@ -15,7 +15,7 @@ abstract class ShellBuilder {
   /// typically only shown when the state is `ValidView`.
   Widget build(
     BuildContext context,
-    ViewShellState state,
+    ShellStatus state,
     ValidViewBuilder builder,
   );
 }
@@ -28,17 +28,17 @@ class NoAnimationShellBuilder extends ShellBuilder {
   @override
   Widget build(
     BuildContext context,
-    ViewShellState state,
+    ShellStatus state,
     ValidViewBuilder builder,
   ) {
     return _switcher(state, builder);
   }
 }
 
-Widget _switcher(ViewShellState state, ValidViewBuilder builder) =>
+Widget _switcher(ShellStatus state, ValidViewBuilder builder) =>
     switch (state) {
-      ValidView _ => builder(),
-      ErrorView _ => const Text('An unexpected error occurred'),
+      ValidShell _ => builder(),
+      ErrorShell _ => const Text('An unexpected error occurred'),
       _ => const _LoadingIndicator(),
     };
 
@@ -71,7 +71,7 @@ class DefaultShellBuilder extends ShellBuilder {
   @override
   Widget build(
     BuildContext context,
-    ViewShellState state,
+    ShellStatus state,
     ValidViewBuilder builder,
   ) {
     return AnimatedSwitcher(
@@ -93,22 +93,21 @@ abstract class SimpleShellBuilder extends ShellBuilder {
   Widget loadingBuilder(BuildContext context);
 
   /// Builds the widget to display when the shell is in an error state.
-  Widget errorBuilder(BuildContext context, ErrorView state);
+  Widget errorBuilder(BuildContext context, ErrorShell state);
 
   @override
   Widget build(
     BuildContext context,
-    ViewShellState state,
+    ShellStatus state,
     ValidViewBuilder builder,
   ) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 500),
       child: switch (state) {
-        ValidView _ => builder(),
-        ErrorView e => errorBuilder(context, e),
+        ValidShell _ => builder(),
+        ErrorShell e => errorBuilder(context, e),
         _ => loadingBuilder(context),
       },
     );
   }
 }
-

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:view_shell/src/prop.dart';
-import 'package:view_shell/src/shell_control.dart';
+import 'package:view_shell/src/shell_widget.dart';
 
 /// A widget that extracts and rebuilds the UI out of a selected prop from [TControl].
 ///
 /// The builder provides the value [TValue] of the prop in the builder.
-class PropValueBuilder<TControl extends ViewShellControl, TValue>
+class PropValueBuilder<
+  TWidget extends ShellWidget,
+  TState extends ShellState<TWidget>,
+  TValue
+>
     extends StatelessWidget {
   /// Creates a [PropValueBuilder] widget.
   const PropValueBuilder({
@@ -17,8 +20,8 @@ class PropValueBuilder<TControl extends ViewShellControl, TValue>
     this.errorBuilder,
   });
 
-  /// Selects the [PropBase] from the [TControl].
-  final PropBase<TValue> Function(TControl control) selector;
+  /// Selects the [PropBase] from the [TState].
+  final PropBase<TValue> Function(TState state) selector;
 
   /// The builder to use when the prop is in a [PropState.success] state.
   final Widget Function(BuildContext context, TValue value) builder;
@@ -37,7 +40,7 @@ class PropValueBuilder<TControl extends ViewShellControl, TValue>
 
   @override
   Widget build(BuildContext context) {
-    final prop = selector(context.read<TControl>());
+    final prop = context.prop<TWidget, TState, PropBase<TValue>>(selector);
 
     return ListenableBuilder(
       listenable: prop,

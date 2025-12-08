@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:view_shell/view_shell.dart';
 
-class MyShellControl extends ViewShellControl {
+class MyShell extends ShellWidget {
+  const MyShell({super.key, required super.child});
+
+  @override
+  ShellState<MyShell> createState() => _MyShellState();
+}
+
+class _MyShellState extends ShellState<MyShell> {
   final counter = SyncProp(0);
 
   final asyncCounter = FutureProp(
@@ -65,62 +72,69 @@ class MyHomePage extends StatelessWidget {
 
         title: Text(title),
       ),
-      body: ViewShell(
-        create: (context) => MyShellControl(),
-        builder: (context, control) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                const Text('Synchronous Counter'),
-                PropValueBuilder<MyShellControl, int>(
-                  selector: (control) => control.counter,
-                  builder: (context, value) {
-                    return Text(
-                      '$value',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    );
-                  },
-                ),
-                TextButton(
-                  onPressed: control.incrementSync,
-                  child: Text('Increment'),
-                ),
-                SizedBox(height: 50),
-                const Text('Asynchronous Counter'),
-                PropValueBuilder<MyShellControl, int>(
-                  selector: (control) => control.asyncCounter,
-                  builder: (context, value) {
-                    return Text(
-                      '$value',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    );
-                  },
-                ),
-                TextButton(
-                  onPressed: control.incrementAsync,
-                  child: Text('Increment'),
-                ),
+      body: MyShell(
+        child: Builder(
+          builder: (context) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  const Text('Synchronous Counter'),
+                  PropValueBuilder<MyShell, _MyShellState, int>(
+                    selector: (control) => control.counter,
+                    builder: (context, value) {
+                      return Text(
+                        '$value',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      );
+                    },
+                  ),
+                  TextButton(
+                    onPressed: context
+                        .shell<MyShell, _MyShellState>()
+                        .incrementSync,
+                    child: Text('Increment'),
+                  ),
+                  SizedBox(height: 50),
+                  const Text('Asynchronous Counter'),
+                  PropValueBuilder<MyShell, _MyShellState, int>(
+                    selector: (control) => control.asyncCounter,
+                    builder: (context, value) {
+                      return Text(
+                        '$value',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      );
+                    },
+                  ),
+                  TextButton(
+                    onPressed: context
+                        .shell<MyShell, _MyShellState>()
+                        .incrementAsync,
+                    child: Text('Increment'),
+                  ),
 
-                SizedBox(height: 50),
-                const Text('Automatic Counter'),
-                PropValueBuilder<MyShellControl, int>(
-                  selector: (control) => control.automaticCounter,
-                  builder: (context, value) {
-                    return Text(
-                      '$value',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    );
-                  },
-                ),
-                TextButton(
-                  onPressed: control.resetCounter,
-                  child: Text('Reset'),
-                ),
-              ],
-            ),
-          );
-        },
+                  SizedBox(height: 50),
+                  const Text('Automatic Counter'),
+                  PropValueBuilder<MyShell, _MyShellState, int>(
+                    selector: (control) => control.automaticCounter,
+                    builder: (context, value) {
+                      return Text(
+                        '$value',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      );
+                    },
+                  ),
+                  TextButton(
+                    onPressed: context
+                        .shell<MyShell, _MyShellState>()
+                        .resetCounter,
+                    child: Text('Reset'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

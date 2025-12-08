@@ -14,7 +14,7 @@ class TestControl extends ViewShellControl {
 
   TestControl(
     this._props, {
-    ViewShellState Function(List<PropBase> props)? customResolver,
+    ShellStatus Function(List<PropBase> props)? customResolver,
   }) : super(statusResolver: customResolver);
 
   @override
@@ -22,7 +22,7 @@ class TestControl extends ViewShellControl {
 }
 
 void main() {
-  group('ViewShellControl', () {
+  group('ShellShellControl', () {
     late MockTestProp prop1;
     late MockTestProp prop2;
 
@@ -57,32 +57,32 @@ void main() {
       _listeners[prop] = listener;
     }
 
-    test('initial state is ValidView when all props are valid', () {
+    test('initial state is ValidShell when all props are valid', () {
       setupProp(prop1, isValid: true);
       setupProp(prop2, isValid: true);
       final control = TestControl([prop1, prop2]);
-      expect(control.state, isA<ValidView>());
+      expect(control.state, isA<ValidShell>());
     });
 
-    test('initial state is PendingView if any prop is not valid', () {
+    test('initial state is PendingShell if any prop is not valid', () {
       setupProp(prop1, isValid: true);
       setupProp(prop2, isValid: false);
       final control = TestControl([prop1, prop2]);
-      expect(control.state, isA<PendingView>());
+      expect(control.state, isA<PendingShell>());
     });
 
-    test('initial state is ErrorView if any prop has an error', () {
+    test('initial state is ErrorShell if any prop has an error', () {
       setupProp(prop1, isValid: true);
       setupProp(prop2, isValid: false, hasErr: true);
       final control = TestControl([prop1, prop2]);
-      expect(control.state, isA<ErrorView>());
+      expect(control.state, isA<ErrorShell>());
     });
 
-    test('ErrorView has priority over PendingView', () {
+    test('ErrorShell has priority over PendingShell', () {
       setupProp(prop1, isValid: false, hasErr: true); // Both error and invalid
       setupProp(prop2, isValid: false);
       final control = TestControl([prop1, prop2]);
-      expect(control.state, isA<ErrorView>());
+      expect(control.state, isA<ErrorShell>());
     });
 
     test('listens to prop changes and updates state', () {
@@ -103,14 +103,14 @@ void main() {
       setupProp(prop1, isValid: false);
       _listeners[prop1]!(); // trigger manually
 
-      expect(control.state, isA<PendingView>());
+      expect(control.state, isA<PendingShell>());
       expect(listenerCallCount, 1);
 
       // Simulate a prop getting an error
       setupProp(prop2, hasErr: true);
       _listeners[prop2]!(); // trigger manually
 
-      expect(control.state, isA<ErrorView>());
+      expect(control.state, isA<ErrorShell>());
       expect(listenerCallCount, 2);
 
       // Simulate all props becoming valid again
@@ -118,27 +118,27 @@ void main() {
       setupProp(prop2, isValid: true, hasErr: false);
       _listeners[prop1]!(); // trigger manually
 
-      expect(control.state, isA<ValidView>());
+      expect(control.state, isA<ValidShell>());
       expect(listenerCallCount, 3);
     });
 
     test('uses custom statusResolver when provided', () {
-      // A resolver that returns PendingView if prop1 has a value of "wait"
-      ViewShellState customResolver(List<PropBase> props) {
+      // A resolver that returns PendingShell if prop1 has a value of "wait"
+      ShellStatus customResolver(List<PropBase> props) {
         if (props.first.value == 'wait') {
-          return const PendingView();
+          return const PendingShell();
         }
-        return const ValidView();
+        return const ValidShell();
       }
 
       setupProp(prop1, isValid: true, val: 'wait');
       final control = TestControl([prop1], customResolver: customResolver);
 
-      expect(control.state, isA<PendingView>());
+      expect(control.state, isA<PendingShell>());
     });
 
     test('does not notify if state type does not change', () {
-      // Prop 1 is invalid -> PendingView
+      // Prop 1 is invalid -> PendingShell
       setupProp(prop1, isValid: false);
       setupProp(prop2, isValid: true);
       final control = TestControl([prop1, prop2]);
@@ -148,14 +148,14 @@ void main() {
       var listenerCallCount = 0;
       control.addListener(() => listenerCallCount++);
 
-      expect(control.state, isA<PendingView>());
+      expect(control.state, isA<PendingShell>());
 
-      // Now prop 2 becomes invalid. State is still PendingView.
+      // Now prop 2 becomes invalid. State is still PendingShell.
 
       setupProp(prop2, isValid: false);
       _listeners[prop2]!();
 
-      expect(control.state, isA<PendingView>());
+      expect(control.state, isA<PendingShell>());
       expect(listenerCallCount, 0); // No notification should have been sent
     });
 
