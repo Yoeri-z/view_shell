@@ -101,6 +101,7 @@ abstract class Shell with ChangeNotifier {
   ///
   /// This function can only be used if the [Shell] is fully initialized,
   /// this means you can only use it in methods that do not get called on the [Shell]s construction
+  @protected
   FutureOr<T?> shellRun<T>(ShellAction<T> action) {
     if (_testing) {
       final completer = Completer<T>();
@@ -231,7 +232,7 @@ class _ShellElement<T extends Shell> extends InheritedElement
 }
 
 extension DependOnInheritedStateOfExactType on BuildContext {
-  /// Find the closest shell of type [T]
+  /// Find the closest shell of type [S]
   ///
   /// This method uses a similar method to [InheritedWidget], meaning performance is O(1).
   S shell<S extends Shell>() {
@@ -248,10 +249,12 @@ extension DependOnInheritedStateOfExactType on BuildContext {
   }
 
   /// Make the widget observe the selected prop, if you want to just read the value of the prop use [shell].
-  P prop<T extends Shell, P extends PropBase>(P Function(T shell) selector) {
+  ///
+  /// It assumes that the prop is accesible in a valid state.
+  PropBase<T> prop<S extends Shell, T>(PropBase<T> Function(S shell) selector) {
     final element =
-        getElementForInheritedWidgetOfExactType<ShellWidget<T>>()
-            as _ShellElement<T>?;
+        getElementForInheritedWidgetOfExactType<ShellWidget<S>>()
+            as _ShellElement<S>?;
 
     assert(
       element != null,

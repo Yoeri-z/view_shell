@@ -4,7 +4,7 @@ import 'package:view_shell/view_shell.dart';
 /// A widget that extracts and rebuilds the UI out of a selected prop from [TControl].
 ///
 /// The builder provides the value [TValue] of the prop in the builder.
-class PropValueBuilder<T extends Shell, TValue> extends StatelessWidget {
+class PropValueBuilder<S extends Shell, TValue> extends StatelessWidget {
   /// Creates a [PropValueBuilder] widget.
   const PropValueBuilder({
     super.key,
@@ -15,7 +15,7 @@ class PropValueBuilder<T extends Shell, TValue> extends StatelessWidget {
   });
 
   /// Selects the [PropBase] from the [TState].
-  final PropBase<TValue> Function(T shell) selector;
+  final PropBase<TValue> Function(S shell) selector;
 
   /// The builder to use when the prop is in a [PropState.success] state.
   final Widget Function(BuildContext context, TValue value) builder;
@@ -34,7 +34,7 @@ class PropValueBuilder<T extends Shell, TValue> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final prop = context.prop<T, PropBase<TValue>>(selector);
+    final prop = context.prop<S, TValue>(selector);
 
     return ListenableBuilder(
       listenable: prop,
